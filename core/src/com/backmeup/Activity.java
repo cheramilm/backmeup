@@ -2,6 +2,7 @@ package com.backmeup;
 
 import com.backmeup.provider.Property;
 import com.backmeup.task.Task;
+import com.backmeup.task.TaskEventType;
 import com.backmeup.task.TaskManager;
 import com.backmeup.task.TaskType;
 import org.apache.log4j.Logger;
@@ -51,6 +52,7 @@ public class Activity extends PropertyBasedObject {
         recordManager = RecordManager.getRecordManager(sourceFolder);
         storageProvider = getProvider().getStorageProvider();
         taskManager = new TaskManager((Integer) getProperty("MaxTasks"));
+        taskManager.setMaxRetry((Integer) getProperty("MaxRetry"));
         applyProperties((PropertyBasedObject) storageProvider);
         storageProvider.init();
     }
@@ -114,6 +116,7 @@ public class Activity extends PropertyBasedObject {
             processFolder(sourceFolder, rootFolder, task);
         } else {
             logger.info("Don't need process root directory [" + targetRootFolder + "] based on local record.");
+            taskManager.notifyTaskListeners(null, TaskEventType.TaskSkipped, null);
             processFolder(sourceFolder, rootFolder, null);
         }
     }
@@ -133,6 +136,7 @@ public class Activity extends PropertyBasedObject {
             } else {
                 task = parentTask;
                 logger.info("Don't need process directory [" + folder + "] based on local record.");
+                taskManager.notifyTaskListeners(null, TaskEventType.TaskSkipped, null);
             }
         } else {
             task = parentTask;
@@ -150,6 +154,7 @@ public class Activity extends PropertyBasedObject {
 
     private void processFile(String sourceFolder, File file, Task parentTask) {
         if (file.getName().equals(RecordManager.FILE_NAME)) {
+            taskManager.notifyTaskListeners(null, TaskEventType.TaskSkipped,null);
             logger.debug("Don't upload local record file.");
             return;
         }
@@ -163,6 +168,7 @@ public class Activity extends PropertyBasedObject {
             taskManager.addTask(task);
         } else {
             logger.info("Don't need process file [" + file + "] based on local record.");
+            taskManager.notifyTaskListeners(null, TaskEventType.TaskSkipped,null);
         }
     }
 
@@ -194,17 +200,15 @@ public class Activity extends PropertyBasedObject {
         return null;
     }
 
-    public File getRecordFile() {
-        return recordFile;
-    }
-
     public void setRecordFile(File recordFile) {
         this.recordFile = recordFile;
     }
 
     public void deleteRecordFile() {
         if (recordFile != null) {
-            recordFile.delete();
+            if (!recordFile.delete()) {
+                logger.warn("Can't delete record file.");
+            }
         }
     }
 

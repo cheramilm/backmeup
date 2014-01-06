@@ -8,17 +8,7 @@ public class DiskStorage extends AbstractStorageProvider {
     @Override
     public boolean doUploadDirectory(String path) {
         File file = new File(path);
-        if (file.mkdirs()) {
-            Utils.sleep(500);
-            return true;
-        } else {
-            if (file.exists()) {
-                Utils.sleep(500);
-                return true;
-            } else {
-                return false;
-            }
-        }
+        return file.mkdirs() || file.exists();
     }
 
     @Override

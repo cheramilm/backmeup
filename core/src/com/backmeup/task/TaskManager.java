@@ -2,7 +2,7 @@ package com.backmeup.task;
 
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Set;
@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 public class TaskManager {
     static Logger logger = Logger.getLogger(TaskManager.class);
     private ExecutorService executorService = Executors.newCachedThreadPool();
-    private Collection<Task> completedTasks = new CopyOnWriteArrayList<Task>();
+    private Collection<Task> completedTasks;
     private Collection<Task> failedTasks = new CopyOnWriteArrayList<Task>();
     private Collection<Task> pendingTasks = new CopyOnWriteArrayList<Task>();
     private Set<Task> executableTasks = new ConcurrentSkipListSet<Task>(TaskComparator.instance);
@@ -30,34 +30,16 @@ public class TaskManager {
     public TaskManager(int maxTasks) {
         this.maxTasks = maxTasks;
         executorService = Executors.newFixedThreadPool(maxTasks);
+        completedTasks = new CopyOnWriteArrayList<Task>();
     }
 
     public void registerTaskListener(TaskListener listener) {
         taskListeners.add(listener);
     }
 
-    public void unregisterTaskListener(TaskListener listener) {
-        taskListeners.remove(listener);
-    }
 
     public void removeAllTaskListeners() {
         taskListeners.clear();
-    }
-
-    public Collection<Task> getExecutingTasks() {
-        return new ArrayList<Task>(executingTasks);
-    }
-
-    public Collection<Task> getPendingTasks() {
-        return new ArrayList<Task>(pendingTasks);
-    }
-
-    public Collection<Task> getFailedTasks() {
-        return new ArrayList<Task>(failedTasks);
-    }
-
-    public Collection<Task> getCompletedTasks() {
-        return new ArrayList<Task>(completedTasks);
     }
 
     public void start() {
@@ -67,10 +49,6 @@ public class TaskManager {
 
     public void stop() {
         running = false;
-    }
-
-    public boolean isRunning() {
-        return running;
     }
 
     public synchronized void executeNextTasks() {
@@ -124,7 +102,7 @@ public class TaskManager {
         notifyTaskListeners(task, type, null);
     }
 
-    private void notifyTaskListeners(Task task, TaskEventType type, TaskEventType relatedEventType) {
+    public void notifyTaskListeners(Task task, TaskEventType type, TaskEventType relatedEventType) {
         TaskEvent event = new TaskEvent(task, type, relatedEventType);
         for (TaskListener listener : taskListeners) {
             listener.taskChanged(event);
@@ -136,6 +114,7 @@ public class TaskManager {
         notifyTaskListeners(task, TaskEventType.ExecutingTaskRemoved);
         executableTasks.add(task);
         notifyTaskListeners(task, TaskEventType.ExecutableTaskAdded);
+        executeNextTasks();
     }
 
     public void addFailedTask(Task task) {
@@ -176,10 +155,6 @@ public class TaskManager {
 
     public void registerProgressListener(ProgressListener listener) {
         progressListeners.add(listener);
-    }
-
-    public void unregisterProgressListener(ProgressListener listener) {
-        progressListeners.remove(listener);
     }
 
     public void removeAllProgressListeners() {

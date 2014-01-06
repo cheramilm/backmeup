@@ -15,10 +15,6 @@ import java.net.UnknownHostException;
 
 public class CIFSStorage extends AbstractStorageProvider {
     static Logger logger = Logger.getLogger(CIFSStorage.class);
-    private String domain;
-    private String username;
-    private String password;
-    private String server;
     private NtlmPasswordAuthentication auth;
     private String rootURL;
 
@@ -81,15 +77,15 @@ public class CIFSStorage extends AbstractStorageProvider {
 
     public void init() {
         jcifs.Config.setProperty("jcifs.resolveOrder", (String)getProperty("ResolveOrder"));
-        domain=(String)getProperty("Domain");
-        username = (String)getProperty("UserName");
-        password = (String)getProperty("Password");
-        server = (String)getProperty("Server");
-        if (domain!=null) {
+        String domain = (String) getProperty("Domain");
+        String username = (String) getProperty("UserName");
+        String password = (String) getProperty("Password");
+        String server = (String) getProperty("Server");
+        if (domain !=null) {
             auth = new NtlmPasswordAuthentication(domain, username, password);
         } else {
             auth = new NtlmPasswordAuthentication(username + ":" + password);
         }
-        rootURL = (String)getProperty("URLPrefix") + server;
+        rootURL = getProperty("URLPrefix") + server;
     }
 }

@@ -172,7 +172,7 @@ public class FtpStorage extends AbstractStorageProvider {
                 LOCAL_CHARSET = "UTF-8";
             }
             ftp.setControlEncoding(LOCAL_CHARSET);
-            if (FTPReply.isPositiveCompletion(ftp.sendCommand("REST 1"))) {
+            if (FTPReply.isPositiveCompletion(ftp.sendCommand("REST 0"))) {
                 supportContinueUpload = true;
             }
         } catch (FTPConnectionClosedException e) {
@@ -189,14 +189,15 @@ public class FtpStorage extends AbstractStorageProvider {
         InputStream input = null;
         try {
             File f = new File(source);
+            String targetPath=getFtpString(target);
+            long targetSize=getTargetSize(targetPath);
+            if (targetSize==f.length()) {
+                logger.info("Target file exist and have same size, ignore.");
+                return true;
+            }
             input = new BufferedInputStream(new FileInputStream(f));
             FTPClient ftp = getFTPClient();
-            ProgressMonitor monitor = (ProgressMonitor) ftp.getCopyStreamListener();
-            if (ftp.storeFile(getFtpString(target), input)) {
-                return true;
-            } else {
-                return false;
-            }
+            return ftp.storeFile(targetPath, input);
         } catch (FileNotFoundException e) {
             logger.error("Can't find target file.", e);
             return false;
@@ -215,6 +216,22 @@ public class FtpStorage extends AbstractStorageProvider {
         }
     }
 
+    private long getTargetSize(String path) {
+        try {
+            FTPClient ftpClient = getFTPClient();
+            FTPFile file = ftpClient.mlistFile(path);
+            if(file!=null) {
+                return file.getSize();
+            } else {
+                return -1;
+            }
+        } catch (IOException e) {
+            logger.warn("Can't get target file:" + path);
+            abandonCurrentConnection();
+        }
+        return -1;
+    }
+
     @Override
     protected boolean doExistTarget(String path, boolean isFile) {
         try {
@@ -223,17 +240,11 @@ public class FtpStorage extends AbstractStorageProvider {
             if (!isFile) {
                 ftpClient.changeWorkingDirectory(getFtpString(path));
                 returnCode = ftpClient.getReplyCode();
-                if (returnCode == 550) {
-                    return false;
-                }
-                return true;
+                return returnCode != 550;
             } else {
                 InputStream inputStream = ftpClient.retrieveFileStream(getFtpString(path));
                 returnCode = ftpClient.getReplyCode();
-                if (inputStream == null || returnCode == 550) {
-                    return false;
-                }
-                return true;
+                return !(inputStream == null || returnCode == 550);
             }
         } catch (IOException e) {
             logger.warn("Can't change working directory to " + path);
@@ -250,11 +261,7 @@ public class FtpStorage extends AbstractStorageProvider {
                 return true;
             } else {
                 returnCode = ftpClient.getReplyCode();
-                if (returnCode == 550) {
-                    return true;
-                } else {
-                    return false;
-                }
+                return returnCode == 550;
             }
         } catch (IOException e) {
             logger.error("Can't create directory:" + path, e);

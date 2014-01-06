@@ -3,7 +3,6 @@ package com.backmeup.ui;
 import com.backmeup.Activity;
 import com.backmeup.ApplicationException;
 import com.backmeup.task.TaskEventType;
-import org.apache.log4j.Logger;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,7 +11,6 @@ import java.awt.event.ActionListener;
 import java.util.Properties;
 
 public class MainFrame extends JFrame {
-    static Logger logger = Logger.getLogger(MainFrame.class);
     static MainFrame instance;
     Container rootContainer;
     JToolBar toolBar;
@@ -35,7 +33,8 @@ public class MainFrame extends JFrame {
     public MainFrame() {
         setTitle(UIContext.getResource("application.title"));
         UIContext.setSystemFont(this.getFont());
-        rootContainer = getRootPane().getContentPane();
+        rootContainer=new JPanel();
+        getRootPane().getContentPane().add(rootContainer);
         rootContainer.setLayout(new BorderLayout());
         addToolbar();
         addActivityList();
@@ -54,7 +53,7 @@ public class MainFrame extends JFrame {
         mainContent.setDividerLocation(200);
 
 //Provide minimum sizes for the two components in the split pane
-        Dimension minimumSize = new Dimension(100, 50);
+        //Dimension minimumSize = new Dimension(100, 50);
         //listScrollPane.setMinimumSize(minimumSize);
         //pictureScrollPane.setMinimumSize(minimumSize);
         rootContainer.add(mainContent, BorderLayout.CENTER);
@@ -77,10 +76,6 @@ public class MainFrame extends JFrame {
         stopButton = addButton("/images/stop.png");
         settingButton = addButton("/images/setting.png");
         rootContainer.add(toolBar, BorderLayout.PAGE_START);
-    }
-
-    private void start() {
-        activityList.startSelectedActivities();
     }
 
     private JButton addButton(String path) {

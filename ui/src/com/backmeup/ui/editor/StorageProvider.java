@@ -15,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Properties;
 
 public class StorageProvider extends BaseEditor {
-    final JComboBox<String> providerList;
+    final JComboBox providerList;
     final JPanel rootPanel = new JPanel();
     final JPanel configurePanel = new JPanel();
 
@@ -66,7 +66,7 @@ public class StorageProvider extends BaseEditor {
         getRootPanel().add(label);
         rootPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         rootPanel.setLayout(new FlowLayout(FlowLayout.LEADING));
-        providerList = new JComboBox<String>((String[])ProviderSchema.getStorageProviders().toArray());
+        providerList = new JComboBox(ProviderSchema.getStorageProviders().toArray());
         rootPanel.add(providerList);
         providerList.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {

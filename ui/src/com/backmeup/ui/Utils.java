@@ -57,7 +57,7 @@ public class Utils {
          return speedFormatter.format(kbs) + "KB/S";
     }
 
-    public static String getLeftTime(long seconds) {
+    public static String getTime(long seconds) {
         if (seconds==Long.MAX_VALUE) return UIContext.getResource("endless");
         long diffSeconds = seconds % 60;
         long diffMinutes = seconds / 60 % 60;

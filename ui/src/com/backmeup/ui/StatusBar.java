@@ -17,6 +17,7 @@ public class StatusBar extends JLabel implements TaskListener, ProgressListener 
     int speedSample;
     long firstStart;
     long totalCompletedSize;
+    long skipped;
 
     public StatusBar(String text) {
         super(text);
@@ -25,14 +26,16 @@ public class StatusBar extends JLabel implements TaskListener, ProgressListener 
     public synchronized void taskChanged(TaskEvent event) {
         TaskEventType type = event.getType();
         Task task = event.getSource();
-        if (task.getType().equals(TaskType.UploadFile)) {
+        if (type.equals(TaskEventType.TaskSkipped)) {
+            skipped++;
+        } else if (task.getType().equals(TaskType.UploadFile)) {
             if (type.equals(TaskEventType.NewTask)) {
                 totalFile++;
                 totalSize += task.getTaskInfo().getSize();
             } else if (type.equals(TaskEventType.CompletedTaskAdded)) {
                 totalFile--;
                 totalSize -= task.getTaskInfo().getSize();
-                totalCompletedSize+=task.getTaskInfo().getSize();
+                totalCompletedSize += task.getTaskInfo().getSize();
                 progressMap.remove(task);
                 completed++;
             } else if (type.equals(TaskEventType.FailedTaskAdded)) {
@@ -46,8 +49,8 @@ public class StatusBar extends JLabel implements TaskListener, ProgressListener 
     }
 
     public synchronized void progressChanged(Task task, Progress progress) {
-        if (firstStart==0) {
-            firstStart=System.currentTimeMillis();
+        if (firstStart == 0) {
+            firstStart = System.currentTimeMillis();
         }
         progressMap.put(task, progress);
         updateStatus();
@@ -55,16 +58,16 @@ public class StatusBar extends JLabel implements TaskListener, ProgressListener 
 
     private void calculateAverageSpeed(float currentSpeed) {
         averageSpeed = (averageSpeed * speedSample + currentSpeed) / (speedSample + 1);
-        long seconds=System.currentTimeMillis()-firstStart/1000;
-        if (seconds>0) {
-            float anotherAverageSpeed=totalCompletedSize/2014/seconds;
-            if (anotherAverageSpeed>averageSpeed) {
-                averageSpeed=anotherAverageSpeed;
+        long seconds = System.currentTimeMillis() - firstStart / 1000;
+        if (seconds > 0) {
+            float anotherAverageSpeed = totalCompletedSize / 2014 / seconds;
+            if (anotherAverageSpeed > averageSpeed) {
+                averageSpeed = anotherAverageSpeed;
             }
         }
         speedSample++;
-        if (speedSample>20) {
-            speedSample=1;
+        if (speedSample > 20) {
+            speedSample = 1;
         }
     }
 
@@ -73,16 +76,22 @@ public class StatusBar extends JLabel implements TaskListener, ProgressListener 
         if (now - lastUpdate < 1000) {
             return;
         }
-        float currentSpeed = getTotalSpeed();
-        calculateAverageSpeed(currentSpeed);
         StringBuffer buffer = new StringBuffer();
-        appendItem(buffer, "totalFiles", totalFile);
-        appendItem(buffer, "size", Utils.getFileSize(totalSize));
-        appendItem(buffer, "speed", Utils.getSpeed(currentSpeed));
-        appendItem(buffer, "estimatedTime", Utils.getLeftTime(getLeftSeconds()));
-        appendItem(buffer, "completed", completed);
-        appendItem(buffer, "failed", failed);
-        appendItem(buffer, "completedSize", Utils.getFileSize(totalCompletedSize), false);
+        if (totalFile==0&&skipped>0) {
+            appendItem(buffer, "skipped", skipped, false);
+        } else {
+            float currentSpeed = getTotalSpeed();
+            calculateAverageSpeed(currentSpeed);
+            appendItem(buffer, "totalFiles", totalFile);
+            appendItem(buffer, "size", Utils.getFileSize(totalSize));
+            appendItem(buffer, "speed", Utils.getSpeed(currentSpeed));
+            appendItem(buffer, "estimatedTime", Utils.getTime(getLeftSeconds()));
+            appendItem(buffer, "completed", completed);
+            appendItem(buffer, "failed", failed);
+            appendItem(buffer, "completedSize", Utils.getFileSize(totalCompletedSize));
+            long usedTime = (firstStart == 0 ? 0 : (now - firstStart) / 1000);
+            appendItem(buffer, "usedTime", Utils.getTime(usedTime), false);
+        }
         setText(buffer.toString());
         lastUpdate = now;
     }

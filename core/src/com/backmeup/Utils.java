@@ -27,8 +27,8 @@ public class Utils {
         String relativePath = getRelativeFilePath(rootDirectory, file);
         int result = 0;
         char[] chars = relativePath.toCharArray();
-        for (int i = 0; i < chars.length; i++) {
-            if (chars[i] == '/' || chars[i] == '\\') {
+        for (char aChar : chars) {
+            if (aChar == '/' || aChar == '\\') {
                 result++;
             }
         }
